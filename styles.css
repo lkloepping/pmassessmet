@@ -242,4 +242,8 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   font-size: 13px;
 }
 
+/* Results: progress bars */
+.bar { height: 8px; background: var(--muted); border: 1px solid var(--border-bridge); border-radius: 999px; overflow: hidden; }
+.bar > div { height: 100%; background: var(--primary-bridge); }
+
 

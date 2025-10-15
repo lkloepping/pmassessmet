@@ -104,8 +104,7 @@ function renderCover() {
   help.innerHTML = `
     <div style="display:grid; gap:12px;">
       <div>
-        <p style="margin:0 0 6px 0;">This assessment helps you reflect across five core areas. For each statement, choose a number from <span class="kbd">0</span> (not like me at all) to <span class="kbd">5</span> (exactly like me).</p>
-        <div class="legend" style="margin-top:6px;"><span>0 Not like me</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5 Exactly like me</span></div>
+        <p style="margin:0;">This assessment helps you reflect across five core areas. For each statement, choose a number from <span class="kbd">0</span> (not like me at all) to <span class="kbd">5</span> (exactly like me).</p>
       </div>
       <div class="grid" style="gap:8px;">
         <div class="card" style="padding:12px;">
@@ -261,6 +260,74 @@ function renderResults(state) {
   grid.appendChild(canvasWrap);
   grid.appendChild(side);
 
+  // Detailed Scores section (bars)
+  const detailed = document.createElement("div");
+  detailed.className = "card";
+  detailed.innerHTML = `<div style="font-weight:700; margin-bottom:8px;">Detailed Scores</div>`;
+  const list = document.createElement("div");
+  list.style.display = "grid";
+  list.style.gap = "8px";
+  state.labels.forEach((name, i) => {
+    const row = document.createElement("div");
+    row.style.display = "flex";
+    row.style.alignItems = "center";
+    row.style.justifyContent = "space-between";
+    row.style.gap = "12px";
+    const label = document.createElement("span"); label.textContent = name; label.style.color = getVar("--foreground");
+    const right = document.createElement("div"); right.style.display = "flex"; right.style.alignItems = "center"; right.style.gap = "8px";
+    const bar = document.createElement("div"); bar.className = "bar"; bar.style.width = "160px";
+    const fill = document.createElement("div"); fill.style.width = `${(scores[i] / 5) * 100}%`;
+    bar.appendChild(fill);
+    const val = document.createElement("span"); val.style.minWidth = "4rem"; val.style.textAlign = "right"; val.style.color = getVar("--primary"); val.textContent = `${scores[i].toFixed(2)} / 5.00`;
+    right.appendChild(bar); right.appendChild(val);
+    row.appendChild(label); row.appendChild(right);
+    list.appendChild(row);
+  });
+  detailed.appendChild(list);
+
+  // Analysis & Recommendations (native details/summary as lightweight accordion)
+  const analysisCard = document.createElement("div");
+  analysisCard.className = "card";
+  const analysisTitle = document.createElement("div"); analysisTitle.style.fontWeight = "700"; analysisTitle.style.marginBottom = "8px"; analysisTitle.textContent = "Detailed Analysis & Recommendations";
+  analysisCard.appendChild(analysisTitle);
+  const analysisWrap = document.createElement("div"); analysisWrap.style.display = "grid"; analysisWrap.style.gap = "8px";
+  state.labels.forEach((name, i) => {
+    const pct = (scores[i] / 5) * 100;
+    const level = pct >= 70 ? "high" : pct >= 40 ? "medium" : "low";
+    const details = document.createElement("details");
+    details.style.border = `1px solid ${getVar("--border-bridge") || "#e5e7eb"}`;
+    details.style.borderRadius = getVar("--radius") || "10px";
+    details.style.padding = "8px 12px";
+    const summary = document.createElement("summary");
+    summary.style.cursor = "pointer";
+    summary.innerHTML = `<strong>${name}</strong> <span style="color: var(--muted-foreground);">Score: ${scores[i].toFixed(2)} / 5.00</span>`;
+    const body = document.createElement("div"); body.style.marginTop = "8px";
+    
+    // Get analysis data from window.ANALYSIS
+    const analysisData = window.ANALYSIS?.[name]?.[level];
+    const description = analysisData?.description || `Analysis for ${name} (${level} level)`;
+    const improvement = analysisData?.improvement || `Improvement suggestions for ${name}`;
+    const strengths = analysisData?.strengths || `Strengths in ${name}`;
+    
+    body.innerHTML = `
+      <div style="margin-bottom:8px;">
+        <div style="margin-bottom:6px; color: var(--foreground); font-weight: 600;">Analysis</div>
+        <p style="color: var(--muted-foreground); margin: 0 0 8px 0;">${description}</p>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="margin-bottom:6px; color: var(--foreground); font-weight: 600;">Areas for Growth</div>
+        <p style="color: var(--muted-foreground); margin: 0 0 8px 0;">${improvement}</p>
+      </div>
+      <div style="margin-bottom:8px;">
+        <div style="margin-bottom:6px; color: var(--foreground); font-weight: 600;">Strengths</div>
+        <p style="color: var(--muted-foreground); margin: 0;">${strengths}</p>
+      </div>
+      <div class="bar" style="margin-top:8px; width: 220px;"><div style="width:${pct}%"></div></div>`;
+    details.appendChild(summary); details.appendChild(body);
+    analysisWrap.appendChild(details);
+  });
+  analysisCard.appendChild(analysisWrap);
+
   const footer = document.createElement("div");
   footer.className = "footer";
   const back = document.createElement("button"); back.textContent = "Back"; back.className = "ghost";
@@ -275,6 +342,8 @@ function renderResults(state) {
   const container = renderContainer([
     renderHeader(title, subtitle, progressRatio, true),
     grid,
+    detailed,
+    analysisCard,
     footer,
   ]);
 
@@ -323,7 +392,7 @@ function renderResults(state) {
   container.addEventListener("click", (e) => {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
-    if (t.id === "download-png") downloadChartPNG(canvas);
+    if (t.id === "download-png") downloadChartPNG(canvas, state.labels, scores);
     if (t.id === "download-csv") downloadCSV(state);
     if (t.id === "start-over") { localStorage.removeItem(STATE_KEY); render(); }
   });
@@ -333,11 +402,60 @@ function renderResults(state) {
 
 function getVar(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 
-function downloadChartPNG(canvas) {
-  const url = canvas.toDataURL("image/png");
+function downloadChartPNG(chartCanvas, labels, scores) {
+  const padding = 24;
+  const rowHeight = 24;
+  const headerHeight = 28;
+  const tableRows = labels.length;
+  const tableHeight = headerHeight + tableRows * rowHeight + padding;
+  const width = Math.max(chartCanvas.width, 640);
+  const height = chartCanvas.height + tableHeight + padding;
+
+  const out = document.createElement("canvas");
+  out.width = width;
+  out.height = height;
+  const ctx = out.getContext("2d");
+  if (!ctx) return;
+
+  // Background
+  ctx.fillStyle = getVar("--card") || "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+
+  // Draw chart centered
+  const chartX = Math.floor((width - chartCanvas.width) / 2);
+  ctx.drawImage(chartCanvas, chartX, padding);
+
+  // Table area
+  const startY = chartCanvas.height + padding * 1.5;
+  ctx.fillStyle = getVar("--foreground") || "#111827";
+  ctx.font = "600 18px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+  ctx.fillText("Scores", padding, startY);
+
+  // Header line
+  ctx.strokeStyle = getVar("--border") || "#e5e7eb";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padding, startY + 8);
+  ctx.lineTo(width - padding, startY + 8);
+  ctx.stroke();
+
+  // Rows
+  const labelX = padding;
+  const scoreX = width - padding;
+  ctx.font = "400 16px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+  for (let i = 0; i < labels.length; i++) {
+    const y = startY + 8 + headerHeight + i * rowHeight;
+    ctx.fillStyle = getVar("--foreground") || "#111827";
+    ctx.fillText(labels[i], labelX, y);
+    const scoreText = String(scores[i].toFixed(2));
+    const metrics = ctx.measureText(scoreText);
+    ctx.fillText(scoreText, scoreX - metrics.width, y);
+  }
+
+  const url = out.toDataURL("image/png");
   const a = document.createElement("a");
   a.href = url;
-  a.download = "assessment-radar.png";
+  a.download = "assessment-radar-with-scores.png";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
