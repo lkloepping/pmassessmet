@@ -77,7 +77,7 @@ function renderHeader(title, subtitle, progressRatio) {
 }
 
 function renderCover() {
-  const title = "Assessment";
+  const title = "Product Manager Assessment";
   const subtitle = "5 pages • 10 questions each • 0–5 scale";
 
   const start = document.createElement("button");
@@ -92,9 +92,15 @@ function renderCover() {
 
   const help = document.createElement("div");
   help.className = "card";
+  const labels = window.QUESTIONS?.labels || ["Dimension 1","Dimension 2","Dimension 3","Dimension 4","Dimension 5"];
   help.innerHTML = `
-    <p>This assessment asks you to rate statements on a scale from <span class="kbd">0</span> (not like me at all) to <span class="kbd">5</span> (exactly like me).</p>
-    <div class="legend"><span>0 Not like me</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5 Exactly like me</span></div>
+    <div style="display:grid; gap:8px;">
+      <p>Rate each statement from <span class="kbd">0</span> (not like me at all) to <span class="kbd">5</span> (exactly like me). Your results will show a radar chart across these five areas:</p>
+      <ul style="margin:0; padding-left:18px; line-height:1.6;">
+        ${labels.map(l => `<li>${l}</li>`).join("")}
+      </ul>
+      <div class="legend" style="margin-top:8px;"><span>0 Not like me</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5 Exactly like me</span></div>
+    </div>
   `;
 
   const footer = document.createElement("div");
