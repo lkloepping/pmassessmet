@@ -1,12 +1,89 @@
+/* Design tokens (light) */
 :root {
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --text: #111827;
-  --muted: #6b7280;
-  --primary: #2d6ae3;
-  --accent: #10b981;
-  --danger: #dc2626;
-  --border: #e5e7eb;
+  --font-size: 16px;
+  --background: #ffffff;
+  --foreground: oklch(0.145 0 0);
+  --card: #ffffff;
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: #06b6d4;
+  --primary-foreground: #ffffff;
+  --secondary: #71717a;
+  --secondary-foreground: #ffffff;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #bef264;
+  --accent-foreground: #1a2e05;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(0, 0, 0, 0.1);
+  --input: transparent;
+  --input-background: #f3f3f5;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #06b6d4;
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: #06b6d4;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: #06b6d4;
+
+  /* Bridge to existing variables used by the app */
+  --bg: var(--background);
+  --surface: var(--card);
+  --text: var(--foreground);
+  --muted-bridge: var(--muted-foreground);
+  --primary-bridge: var(--primary);
+  --accent-bridge: var(--accent);
+  --danger-bridge: var(--destructive);
+  --border-bridge: var(--border);
+}
+
+/* Design tokens (dark) - applied when .dark is present on a parent */
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.145 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: #22d3ee;
+  --primary-foreground: #0a0a0a;
+  --secondary: #52525b;
+  --secondary-foreground: #fafafa;
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: #a3e635;
+  --accent-foreground: #1a2e05;
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
+  --ring: #22d3ee;
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: #22d3ee;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.269 0 0);
+  --sidebar-ring: #22d3ee;
 }
 
 * { box-sizing: border-box; }
@@ -17,7 +94,7 @@ body {
   margin: 0;
   font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: var(--text);
-  background: #f8fafc;
+  background: var(--bg);
 }
 
 #app {
@@ -32,7 +109,7 @@ body {
   width: 100%;
   max-width: 960px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-bridge);
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 10px 30px rgba(17, 24, 39, 0.06);
@@ -61,8 +138,8 @@ body {
 }
 
 .card {
-  background: #ffffff;
-  border: 1px solid var(--border);
+  background: var(--card);
+  border: 1px solid var(--border-bridge);
   border-radius: 12px;
   padding: 16px;
 }
@@ -93,15 +170,15 @@ body {
   justify-content: center;
   height: 40px;
   border-radius: 10px;
-  border: 1px solid var(--border);
-  background: #f9fafb;
+  border: 1px solid var(--border-bridge);
+  background: var(--input-background);
   color: var(--text);
   cursor: pointer;
   user-select: none;
 }
 
-.pill.selected { outline: 2px solid var(--primary); border-color: var(--primary); background: #eef2ff; }
-.pill:hover { background: #f3f4f6; }
+.pill.selected { outline: 2px solid var(--primary-bridge); border-color: var(--primary-bridge); background: #eef2ff; }
+.pill:hover { background: var(--muted); }
 
 .footer {
   display: flex;
@@ -114,27 +191,27 @@ button {
   height: 40px;
   padding: 0 14px;
   border-radius: 10px;
-  border: 1px solid var(--border);
-  background: #ffffff;
+  border: 1px solid var(--border-bridge);
+  background: var(--card);
   color: var(--text);
   font-weight: 600;
   cursor: pointer;
 }
 
-button.primary { background: var(--primary); color: #ffffff; border-color: var(--primary); }
+button.primary { background: var(--primary-bridge); color: var(--primary-foreground); border-color: var(--primary-bridge); }
 button.ghost { background: transparent; }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .progress {
   height: 8px;
   width: 100%;
-  background: #f3f4f6;
-  border: 1px solid var(--border);
+  background: var(--muted);
+  border: 1px solid var(--border-bridge);
   border-radius: 999px;
   overflow: hidden;
 }
 
-.progress > div { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); width: 0%; }
+.progress > div { height: 100%; background: linear-gradient(90deg, var(--primary-bridge), var(--accent-bridge)); width: 0%; }
 
 .legend {
   display: flex;
@@ -154,8 +231,8 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .kbd {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: #f3f4f6;
-  border: 1px solid var(--border);
+  background: var(--muted);
+  border: 1px solid var(--border-bridge);
   padding: 2px 6px;
   border-radius: 6px;
 }
