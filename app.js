@@ -56,7 +56,7 @@ function renderContainer(children) {
   return container;
 }
 
-function renderHeader(title, subtitle, progressRatio) {
+function renderHeader(title, subtitle, progressRatio, showRestart) {
   const header = document.createElement("div");
   header.className = "header";
 
@@ -65,11 +65,19 @@ function renderHeader(title, subtitle, progressRatio) {
   const s = document.createElement("div"); s.className = "subtitle"; s.textContent = subtitle;
   left.appendChild(h); left.appendChild(s);
 
-  const right = document.createElement("div"); right.style.flex = "1";
-  const prog = document.createElement("div"); prog.className = "progress";
+  const right = document.createElement("div"); right.style.flex = "1"; right.style.display = "flex"; right.style.gap = "8px"; right.style.alignItems = "center";
+  const prog = document.createElement("div"); prog.className = "progress"; prog.style.flex = "1";
   const bar = document.createElement("div"); bar.style.width = `${Math.round(progressRatio * 100)}%`;
   prog.appendChild(bar);
   right.appendChild(prog);
+  if (showRestart) {
+    const restart = document.createElement("button"); restart.className = "ghost"; restart.textContent = "Restart";
+    restart.addEventListener("click", () => {
+      localStorage.removeItem(STATE_KEY);
+      render();
+    });
+    right.appendChild(restart);
+  }
 
   header.appendChild(left);
   header.appendChild(right);
@@ -128,7 +136,7 @@ function renderCover() {
   footer.appendChild(start);
 
   return renderContainer([
-    renderHeader(title, subtitle, 0),
+    renderHeader(title, subtitle, 0, false),
     help,
     footer,
   ]);
@@ -196,7 +204,7 @@ function renderAssessment(state) {
   footer.appendChild(next);
 
   return renderContainer([
-    renderHeader(pageTitle, subtitle, progressRatio),
+    renderHeader(pageTitle, subtitle, progressRatio, true),
     grid,
     error,
     footer,
@@ -265,7 +273,7 @@ function renderResults(state) {
   footer.appendChild(back);
 
   const container = renderContainer([
-    renderHeader(title, subtitle, progressRatio),
+    renderHeader(title, subtitle, progressRatio, true),
     grid,
     footer,
   ]);
@@ -354,6 +362,12 @@ function downloadCSV(state) {
 }
 
 // Initial render
-window.addEventListener("DOMContentLoaded", render);
+window.addEventListener("DOMContentLoaded", () => {
+  const params = new URLSearchParams(location.search);
+  if (params.get("reset") === "1") {
+    localStorage.removeItem(STATE_KEY);
+  }
+  render();
+});
 
 
