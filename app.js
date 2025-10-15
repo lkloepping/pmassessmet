@@ -78,7 +78,7 @@ function renderHeader(title, subtitle, progressRatio) {
 
 function renderCover() {
   const title = "Product Manager Assessment";
-  const subtitle = "5 pages • 10 questions each • 0–5 scale";
+  const subtitle = "Five short sections • Ten statements each • 0–5 rating scale";
 
   const start = document.createElement("button");
   start.className = "primary";
@@ -94,12 +94,32 @@ function renderCover() {
   help.className = "card";
   const labels = window.QUESTIONS?.labels || ["Dimension 1","Dimension 2","Dimension 3","Dimension 4","Dimension 5"];
   help.innerHTML = `
-    <div style="display:grid; gap:8px;">
-      <p>Rate each statement from <span class="kbd">0</span> (not like me at all) to <span class="kbd">5</span> (exactly like me). Your results will show a radar chart across these five areas:</p>
-      <ul style="margin:0; padding-left:18px; line-height:1.6;">
-        ${labels.map(l => `<li>${l}</li>`).join("")}
-      </ul>
-      <div class="legend" style="margin-top:8px;"><span>0 Not like me</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5 Exactly like me</span></div>
+    <div style="display:grid; gap:12px;">
+      <div>
+        <p style="margin:0 0 6px 0;">This assessment helps you reflect across five core areas. For each statement, choose a number from <span class="kbd">0</span> (not like me at all) to <span class="kbd">5</span> (exactly like me).</p>
+        <div class="legend" style="margin-top:6px;"><span>0 Not like me</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5 Exactly like me</span></div>
+      </div>
+      <div class="grid" style="gap:8px;">
+        <div class="card" style="padding:12px;">
+          <div style="font-weight:700; margin-bottom:6px;">How it works</div>
+          <ul style="margin:0; padding-left:18px; line-height:1.6;">
+            <li>5 pages, 10 statements per page</li>
+            <li>Rate each statement 0–5 based on how much it reflects you</li>
+            <li>See a radar chart summary at the end</li>
+          </ul>
+        </div>
+        <div class="card" style="padding:12px;">
+          <div style="font-weight:700; margin-bottom:6px;">Sections</div>
+          <ul style="margin:0; padding-left:18px; line-height:1.6;">
+            ${labels.map(l => `<li>${l}</li>`).join("")}
+          </ul>
+        </div>
+        <div class="card" style="padding:12px;">
+          <div style="font-weight:700; margin-bottom:6px;">Time</div>
+          <p style="margin:0;">About 6–8 minutes. You can navigate back before you submit.</p>
+        </div>
+      </div>
+      <p style="margin:0; color: var(--muted-foreground);">Your responses are stored only in your browser. You can download your results as an image and CSV.</p>
     </div>
   `;
 
