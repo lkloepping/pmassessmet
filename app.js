@@ -252,6 +252,7 @@ function renderResults(state) {
     <hr style="border-color: var(--border); margin: 12px 0;" />
     <div style="display:flex; gap:8px; flex-wrap: wrap;">
       <button id="download-png" class="primary">Download Chart (PNG)</button>
+      <button id="download-pdf">Download PDF Report</button>
       <button id="download-csv">Download CSV</button>
       <button id="start-over" class="ghost">Start Over</button>
     </div>
@@ -393,6 +394,7 @@ function renderResults(state) {
     const t = e.target;
     if (!(t instanceof HTMLElement)) return;
     if (t.id === "download-png") downloadChartPNG(canvas, state.labels, scores);
+    if (t.id === "download-pdf") downloadPDF(canvas, state.labels, scores);
     if (t.id === "download-csv") downloadCSV(state);
     if (t.id === "start-over") { localStorage.removeItem(STATE_KEY); render(); }
   });
@@ -406,10 +408,11 @@ function downloadChartPNG(chartCanvas, labels, scores) {
   const padding = 24;
   const rowHeight = 24;
   const headerHeight = 28;
+  const analysisHeight = 120; // Height for analysis section
   const tableRows = labels.length;
   const tableHeight = headerHeight + tableRows * rowHeight + padding;
-  const width = Math.max(chartCanvas.width, 640);
-  const height = chartCanvas.height + tableHeight + padding;
+  const width = Math.max(chartCanvas.width, 800);
+  const height = chartCanvas.height + tableHeight + analysisHeight + padding * 3;
 
   const out = document.createElement("canvas");
   out.width = width;
@@ -425,26 +428,26 @@ function downloadChartPNG(chartCanvas, labels, scores) {
   const chartX = Math.floor((width - chartCanvas.width) / 2);
   ctx.drawImage(chartCanvas, chartX, padding);
 
-  // Table area
-  const startY = chartCanvas.height + padding * 1.5;
+  // Scores table
+  const tableY = chartCanvas.height + padding * 1.5;
   ctx.fillStyle = getVar("--foreground") || "#111827";
   ctx.font = "600 18px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
-  ctx.fillText("Scores", padding, startY);
+  ctx.fillText("Detailed Scores", padding, tableY);
 
   // Header line
   ctx.strokeStyle = getVar("--border") || "#e5e7eb";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(padding, startY + 8);
-  ctx.lineTo(width - padding, startY + 8);
+  ctx.moveTo(padding, tableY + 8);
+  ctx.lineTo(width - padding, tableY + 8);
   ctx.stroke();
 
-  // Rows
+  // Score rows
   const labelX = padding;
   const scoreX = width - padding;
   ctx.font = "400 16px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
   for (let i = 0; i < labels.length; i++) {
-    const y = startY + 8 + headerHeight + i * rowHeight;
+    const y = tableY + 8 + headerHeight + i * rowHeight;
     ctx.fillStyle = getVar("--foreground") || "#111827";
     ctx.fillText(labels[i], labelX, y);
     const scoreText = String(scores[i].toFixed(2));
@@ -452,13 +455,172 @@ function downloadChartPNG(chartCanvas, labels, scores) {
     ctx.fillText(scoreText, scoreX - metrics.width, y);
   }
 
+  // Analysis section
+  const analysisY = tableY + tableHeight + padding;
+  ctx.font = "600 18px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+  ctx.fillText("Key Insights", padding, analysisY);
+
+  // Add top 3 insights
+  const insights = labels.map((label, i) => {
+    const pct = (scores[i] / 5) * 100;
+    const level = pct >= 70 ? "high" : pct >= 40 ? "medium" : "low";
+    const analysisData = window.ANALYSIS?.[label]?.[level];
+    return {
+      label,
+      score: scores[i],
+      level,
+      insight: analysisData?.description || `Analysis for ${label}`
+    };
+  }).sort((a, b) => b.score - a.score).slice(0, 3);
+
+  ctx.font = "400 14px Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif";
+  let currentY = analysisY + 30;
+  insights.forEach((insight, i) => {
+    ctx.fillStyle = getVar("--foreground") || "#111827";
+    ctx.fillText(`${i + 1}. ${insight.label} (${insight.score.toFixed(2)}/5)`, padding, currentY);
+    currentY += 20;
+    
+    // Wrap text for insight
+    const words = insight.insight.split(' ');
+    let line = '';
+    let lineY = currentY;
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' ';
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > width - padding * 2 && n > 0) {
+        ctx.fillStyle = getVar("--muted-foreground") || "#6b7280";
+        ctx.fillText(line, padding, lineY);
+        line = words[n] + ' ';
+        lineY += 16;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillStyle = getVar("--muted-foreground") || "#6b7280";
+    ctx.fillText(line, padding, lineY);
+    currentY = lineY + 25;
+  });
+
   const url = out.toDataURL("image/png");
   const a = document.createElement("a");
   a.href = url;
-  a.download = "assessment-radar-with-scores.png";
+  a.download = "assessment-complete-report.png";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+}
+
+function downloadPDF(chartCanvas, labels, scores) {
+  if (typeof window.jspdf === 'undefined') {
+    alert('PDF library not loaded. Please refresh and try again.');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  const contentWidth = pageWidth - (margin * 2);
+
+  // Title
+  doc.setFontSize(24);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Product Manager Assessment Results', margin, margin + 10);
+
+  // Date
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, margin, margin + 20);
+
+  // Chart (convert canvas to image)
+  const chartDataURL = chartCanvas.toDataURL('image/png');
+  const chartWidth = Math.min(contentWidth, 150);
+  const chartHeight = (chartCanvas.height / chartCanvas.width) * chartWidth;
+  doc.addImage(chartDataURL, 'PNG', margin, margin + 30, chartWidth, chartHeight);
+
+  // Scores table
+  let currentY = margin + 30 + chartHeight + 20;
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Detailed Scores', margin, currentY);
+  currentY += 10;
+
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  labels.forEach((label, i) => {
+    const score = scores[i].toFixed(2);
+    doc.text(`${label}: ${score}/5.00`, margin, currentY);
+    currentY += 8;
+  });
+
+  // Analysis sections
+  currentY += 10;
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Detailed Analysis & Recommendations', margin, currentY);
+  currentY += 15;
+
+  labels.forEach((label, i) => {
+    // Check if we need a new page
+    if (currentY > pageHeight - 60) {
+      doc.addPage();
+      currentY = margin;
+    }
+
+    const score = scores[i];
+    const pct = (score / 5) * 100;
+    const level = pct >= 70 ? "high" : pct >= 40 ? "medium" : "low";
+    const analysisData = window.ANALYSIS?.[label]?.[level];
+
+    // Section header
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${label} (${score.toFixed(2)}/5.00)`, margin, currentY);
+    currentY += 8;
+
+    // Analysis
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Analysis:', margin, currentY);
+    currentY += 6;
+    doc.setFont('helvetica', 'normal');
+    const analysisText = analysisData?.description || `Analysis for ${label}`;
+    const analysisLines = doc.splitTextToSize(analysisText, contentWidth);
+    doc.text(analysisLines, margin, currentY);
+    currentY += analysisLines.length * 5 + 5;
+
+    // Areas for Growth
+    doc.setFont('helvetica', 'bold');
+    doc.text('Areas for Growth:', margin, currentY);
+    currentY += 6;
+    doc.setFont('helvetica', 'normal');
+    const improvementText = analysisData?.improvement || `Improvement suggestions for ${label}`;
+    const improvementLines = doc.splitTextToSize(improvementText, contentWidth);
+    doc.text(improvementLines, margin, currentY);
+    currentY += improvementLines.length * 5 + 5;
+
+    // Strengths
+    doc.setFont('helvetica', 'bold');
+    doc.text('Strengths:', margin, currentY);
+    currentY += 6;
+    doc.setFont('helvetica', 'normal');
+    const strengthsText = analysisData?.strengths || `Strengths in ${label}`;
+    const strengthsLines = doc.splitTextToSize(strengthsText, contentWidth);
+    doc.text(strengthsLines, margin, currentY);
+    currentY += strengthsLines.length * 5 + 15;
+  });
+
+  // Footer
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth - 30, pageHeight - 10);
+  }
+
+  doc.save('assessment-complete-report.pdf');
 }
 
 function downloadCSV(state) {
