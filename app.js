@@ -252,6 +252,13 @@ function renderResults(state) {
 
   // Instantiate radar chart after it is in the DOM
   setTimeout(() => {
+    if (typeof Chart === "undefined" || !canvas) {
+      const fallback = document.createElement("div");
+      fallback.className = "card";
+      fallback.textContent = "Unable to load chart library. Please check your connection and try again.";
+      canvas.parentElement?.appendChild(fallback);
+      return;
+    }
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     if (chartInstance) chartInstance.destroy();
